@@ -11,6 +11,12 @@ model2 = joblib.load("crop_model.pkl")
 scaler2 = joblib.load("crop_scaler.pkl")
 label_encoder = joblib.load("crop_label_encoder.pkl")
 
+# svm models 
+scaler3 = joblib.load("models/crop_scaler_svm.pkl")
+clf = joblib.load("models/dag_svm_model.pkl")
+crop_le = joblib.load("models/crop_label_encoder_svm.pkl")
+category_encoders = joblib.load("models/category_encoders_svm.pkl")
+
 # FastAPI instance
 app = FastAPI(title="Soil Fertility Prediction API")
 
@@ -38,6 +44,22 @@ class CropFeatures(BaseModel):
     ph: float
     rainfall: float
 
+class CropInput(BaseModel):
+    Latitude: float
+    Longitude: float
+    District: str
+    Area: str
+    Season: str
+    Temperature: float
+    Moisture: float
+    Water_Level: float
+    pH: float
+    Nitrogen: float
+    Phosphorous: float
+    Potassium: float
+    EC: float
+    OC: float
+
 @app.post("/predict-soil-fertility")
 def predict_soil_fertility(data: SoilFeatures):
     features = np.array([[data.N, data.P, data.K, data.pH, data.EC, data.OC,data.S, data.Zn, data.Fe, data.Cu, data.Mn, data.B]])
@@ -54,7 +76,6 @@ def predict_soil_fertility(data: SoilFeatures):
     }
 @app.post("/predict-crop")
 def predict_crop(features: CropFeatures):
-    data = np.array([[features.N, features.P, features.K, features.temperature,features.humidity, features.ph, features.rainfall]])
     
     # Scale input
     data_scaled = scaler2.transform(data)
@@ -67,4 +88,32 @@ def predict_crop(features: CropFeatures):
 
     return {
         "predicted_crop": pred_crop
+    }
+
+@app.post("/predict-crop-loction")
+def predict_crop(data: CropInput):
+    # Encode categorical fields
+    try:
+        district_enc = category_encoders['District'].transform([data.District])[0]
+        area_enc = category_encoders['Area'].transform([data.Area])[0]
+        season_enc = category_encoders['Season'].transform([data.Season])[0]
+    except Exception as e:
+        return {"error": f"Encoding error: {str(e)}"}
+
+    # Prepare input array
+    features = np.array([[
+        data.Latitude, data.Longitude, district_enc, area_enc, season_enc,
+        data.Temperature, data.Moisture, data.Water_Level, data.pH,
+        data.Nitrogen, data.Phosphorous, data.Potassium,
+        data.EC, data.OC
+    ]])
+    features_scaled = scaler3.transform(features)
+
+    pred = clf.predict(features_scaled)[0]
+    prob = clf.predict_proba(features_scaled).max()
+    crop = crop_le.inverse_transform([pred])[0]
+
+    return {
+        "predicted_crop": crop,
+        "confidence": round(prob, 4)
     }
