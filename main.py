@@ -76,7 +76,8 @@ def predict_soil_fertility(data: SoilFeatures):
     }
 @app.post("/predict-crop")
 def predict_crop(features: CropFeatures):
-    
+    data = np.array([[features.N, features.P, features.K, features.temperature,features.humidity, features.ph, features.rainfall]])
+
     # Scale input
     data_scaled = scaler2.transform(data)
     
