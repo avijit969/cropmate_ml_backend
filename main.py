@@ -3,24 +3,24 @@ from pydantic import BaseModel
 import numpy as np
 import joblib
 
-# Load model and scaler
-model = joblib.load("soil_model.pkl")
-scaler = joblib.load("soil_scaler.pkl")
+# Load model and scaler for soil fertility prediction
+model = joblib.load("models/fertility/soil_model.pkl")
+scaler = joblib.load("models/fertility/soil_scaler.pkl")
 
-model2 = joblib.load("crop_model.pkl")
-scaler2 = joblib.load("crop_scaler.pkl")
-label_encoder = joblib.load("crop_label_encoder.pkl")
+# Load model and scaler for crop prediction
+model2 = joblib.load("models/crop_type/crop_model.pkl")
+scaler2 = joblib.load("models/crop_type/crop_scaler.pkl")
+label_encoder = joblib.load("models/crop_type/crop_label_encoder.pkl")
 
-# svm models 
-scaler3 = joblib.load("models/crop_scaler_svm.pkl")
-clf = joblib.load("models/dag_svm_model.pkl")
-crop_le = joblib.load("models/crop_label_encoder_svm.pkl")
-category_encoders = joblib.load("models/category_encoders_svm.pkl")
+# Load the model and scaler for crop prediction with location
+scaler3 = joblib.load("models/crop_type_location/crop_scaler_svm.pkl")
+clf = joblib.load("models/crop_type_location/dag_svm_model.pkl")
+crop_le = joblib.load("models/crop_type_location/crop_label_encoder_svm.pkl")
+category_encoders = joblib.load("models/crop_type_location/category_encoders_svm.pkl")
 
 # FastAPI instance
-app = FastAPI(title="Soil Fertility Prediction API")
+app = FastAPI(title="CropMate ML API")
 
-# Define expected input
 class SoilFeatures(BaseModel):
     N: float
     P: float
@@ -90,7 +90,7 @@ def predict_crop(features: CropFeatures):
         "predicted_crop": pred_crop
     }
 
-@app.post("/predict-crop-loction")
+@app.post("/predict-crop-location")
 def predict_crop(data: CropInput):
     # Encode categorical fields
     try:
