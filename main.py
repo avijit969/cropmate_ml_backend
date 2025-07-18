@@ -118,3 +118,8 @@ def predict_crop(data: CropInput):
         "predicted_crop": crop,
         "confidence": round(prob, 4)
     }
+    
+# Health Check API
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
